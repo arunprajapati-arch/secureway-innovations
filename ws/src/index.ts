@@ -21,24 +21,35 @@ wss.on('connection', async function connection(ws) {
     } 
     else{
         ws.send("loading the store");
-        await Store.getInstance().loadStore();
-        storeLoaded = true;
-        ws.send("store load completed")
+        const checkLoadStore = await Store.getInstance().loadStore();
+        if(checkLoadStore){
+            storeLoaded = true;
+            ws.send("store load completed")
+        }
+        else{
+            ws.send("store load unsucessfull");
+        }
+        
     }
     
     ws.on('message', async (data) => {
         const parsedData = await JSON.parse(data.toString());
         console.log(parsedData);
-        
-        if(Store.getInstance().verifyStudent(parsedData.payload.id) === true){
+        const rollNo = parsedData.payload.roll
+        const verifyStudent = Store.getInstance().verifyStudent(parsedData.payload.id);
+        if(verifyStudent){
+            
             const outgoingMessage = {
-                "access": "granted"
+                "access": "granted",
+                "roll": verifyStudent.roll,
+                "username": verifyStudent.name
             }
             ws.send(JSON.stringify(outgoingMessage));
         }
         else{
             const outgoingMessage = {
-                "access": "blocked"
+                "access": "blocked",
+                "roll": rollNo
             }
             ws.send(JSON.stringify(outgoingMessage));
         }

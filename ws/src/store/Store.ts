@@ -1,12 +1,17 @@
 import prisma from "../db";
+
+interface Student{
+    roll: string
+    name: string
+}
+
 export class Store{
     
-     students: Map<string,string> = new Map();
+     students: Map<string,Student> = new Map();
      static instance:Store;
 
      private constructor(){
         this.students = new Map();
-        // load from db 
      }
 
      static getInstance() {
@@ -18,15 +23,9 @@ export class Store{
 
     
 
-    public verifyStudent(rfId:string):boolean{
-        if (this.students.has(rfId)) {
-            return true;
-        }
-        // if (!this.students.has(rfId)) {
-        //     // check in db if found append to store and return true 
-            
-        // }
-        return false
+    public verifyStudent(rfId:string){
+        return this.students.get(rfId)
+        
     }
 
     public async loadStore(){
@@ -35,19 +34,27 @@ export class Store{
             const students = await prisma.student.findMany({
                 select: {
                   rfId: true,  // Select only the rfId field
-                  rollNo: true // Select only the rollNo field
+                  rollNo: true,
+                  username: true
                 }
               });
       
             // Populate the Map with student data (assuming id and name)
-            students.forEach((student) => {
-              this.students.set(student.rfId, student.rollNo);
+            students.forEach((s) => {
+                const student: Student = {
+                    roll: s.rollNo,
+                    name: s.username
+                }
+              this.students.set(s.rfId, student);
             });
-      
+            
             console.log("Loaded students into the store.");
+            return true;
             
           } catch (error) {
+            
             console.error("Error loading students from the database: ", error);
+            return false;
           }
     }
 
