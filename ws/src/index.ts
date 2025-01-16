@@ -1,19 +1,36 @@
 import { WebSocketServer } from 'ws';
-import { data } from './inMemoryStore/store';
+import { Store } from './store/Store';
 
 const wss = new WebSocketServer({ port: 3001 });
 
-const cacheData = data;
-console.log(cacheData);
+let storeLoaded = false;
 
+// Store.getInstance().loadStore().then(() => {
+//     storeLoaded = true
+//     console.log("Store Loaded Successfully");
+    
+// }).catch((error) => {
+//     console.error("Failed Store Load", error);
+// })
 
 wss.on('connection', async function connection(ws) {
     // await loadInMemoryStore
+
+    if(storeLoaded){
+        ws.send("store is loaded");
+    } 
+    else{
+        ws.send("loading the store");
+        await Store.getInstance().loadStore();
+        storeLoaded = true;
+        ws.send("store load completed")
+    }
+    
     ws.on('message', async (data) => {
         const parsedData = await JSON.parse(data.toString());
         console.log(parsedData);
         
-        if(parsedData.payload.id === cacheData){
+        if(Store.getInstance().verifyStudent(parsedData.payload.id) === true){
             const outgoingMessage = {
                 "access": "granted"
             }
