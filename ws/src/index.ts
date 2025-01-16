@@ -4,6 +4,11 @@ import { Store } from './store/Store';
 const wss = new WebSocketServer({ port: 3001 });
 
 let storeLoaded = false;
+interface outgoingMessage {
+    access: string
+    roll: string
+    username?: string
+}
 
 // Store.getInstance().loadStore().then(() => {
 //     storeLoaded = true
@@ -17,14 +22,14 @@ wss.on('connection', async function connection(ws) {
     // await loadInMemoryStore
 
     if(storeLoaded){
-        ws.send("store is loaded");
+        ws.send(JSON.stringify("store is loaded"));
     } 
     else{
-        ws.send("loading the store");
+        ws.send(JSON.stringify("loading the store"));
         const checkLoadStore = await Store.getInstance().loadStore();
         if(checkLoadStore){
             storeLoaded = true;
-            ws.send("store load completed")
+            ws.send(JSON.stringify("store load completed"))
         }
         else{
             ws.send("store load unsucessfull");
@@ -44,14 +49,14 @@ wss.on('connection', async function connection(ws) {
                 "roll": verifyStudent.roll,
                 "username": verifyStudent.name
             }
-            ws.send(JSON.stringify(outgoingMessage));
+            broadcast(outgoingMessage);
         }
         else{
             const outgoingMessage = {
                 "access": "blocked",
                 "roll": rollNo
             }
-            ws.send(JSON.stringify(outgoingMessage));
+            broadcast(outgoingMessage);
         }
     })
   console.log("User connected")
@@ -61,3 +66,11 @@ wss.on('connection', async function connection(ws) {
    
   });
 });
+
+function broadcast(message: outgoingMessage) {
+    wss.clients.forEach(client => {
+        if (client.readyState === client.OPEN) {
+            client.send(JSON.stringify(message));
+        }
+    });
+}
